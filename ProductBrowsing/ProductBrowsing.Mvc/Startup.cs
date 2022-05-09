@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ProductBrowsing.Core;
 using ProductBrowsing.Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -29,6 +30,8 @@ namespace ProductBrowsing.Mvc
 
             services.AddDbContext<DatabaseContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("DatabaseContext")));
+
+            services.AddProductBrowsingServices();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
