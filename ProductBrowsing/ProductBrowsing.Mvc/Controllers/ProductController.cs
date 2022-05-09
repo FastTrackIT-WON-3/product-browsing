@@ -13,19 +13,25 @@ namespace ProductBrowsing.Mvc.Controllers
     public class ProductController : Controller
     {
         private readonly IProductService _productService;
+        private readonly ICategoryService _categoryService;
 
-        public ProductController(IProductService productService)
+        public ProductController(
+            IProductService productService,
+            ICategoryService categoryService)
         {
             _productService = productService
                 ?? throw new ArgumentNullException(nameof(productService));
+
+            _categoryService = categoryService
+                ?? throw new ArgumentNullException(nameof(categoryService));
         }
 
         // GET: Product
         public async Task<IActionResult> Index()
         {
-            List<Product> allCategories = await _productService.GetAllAsync();
+            List<Product> allProducts = await _productService.GetAllAsync();
 
-            List<ProductViewModel> allViewModels = allCategories
+            List<ProductViewModel> allViewModels = allProducts
                 .Select(c => c.ToViewModel())
                 .ToList();
 
@@ -51,9 +57,18 @@ namespace ProductBrowsing.Mvc.Controllers
         }
 
         // GET: Product/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            ProductViewModel viewModel = new ProductViewModel();
+
+            List<Category> allCategories = await _categoryService.GetAllAsync();
+            viewModel.AllAvailableCategories = allCategories
+                .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                    c.Name,
+                    c.Id.ToString()))
+                .ToList();
+
+            return View(viewModel);
         }
 
         // POST: Product/Create
@@ -62,13 +77,12 @@ namespace ProductBrowsing.Mvc.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            [Bind("Id,Name")] ProductViewModel productViewModel)
+            [Bind("Id,SelectedCategoryId,Name")] ProductViewModel productViewModel)
         {
             if (ModelState.IsValid)
             {
-                // TODO: take in account category selection
                 bool createSucceeded = await _productService.CreateAsync(
-                    productViewModel.Category.Id,
+                    productViewModel.SelectedCategoryId,
                     productViewModel.Name);
 
                 if (createSucceeded)
@@ -76,6 +90,14 @@ namespace ProductBrowsing.Mvc.Controllers
                     return RedirectToAction(nameof(Index));
                 }
             }
+
+            // something went wrong, user must fill in data again
+            List<Category> allCategories = await _categoryService.GetAllAsync();
+            productViewModel.AllAvailableCategories = allCategories
+                .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                    c.Name,
+                    c.Id.ToString()))
+                .ToList();
 
             return View(productViewModel);
         }
@@ -95,6 +117,15 @@ namespace ProductBrowsing.Mvc.Controllers
             }
 
             ProductViewModel viewModel = product.ToViewModel();
+
+            List<Category> allCategories = await _categoryService.GetAllAsync();
+            viewModel.AllAvailableCategories = allCategories
+                .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                    c.Name,
+                    c.Id.ToString()))
+                .ToList();
+            viewModel.SelectedCategoryId = viewModel.CategoryId;
+
             return View(viewModel);
         }
 
@@ -105,7 +136,7 @@ namespace ProductBrowsing.Mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             int id,
-            [Bind("Id,Name")] ProductViewModel productViewModel)
+            [Bind("Id,SelectedCategoryId,Name")] ProductViewModel productViewModel)
         {
             if (id != productViewModel.Id)
             {
@@ -116,7 +147,7 @@ namespace ProductBrowsing.Mvc.Controllers
             {
                 bool updateSucceeded = await _productService.UpdateAsync(
                     id,
-                    productViewModel.Category.Id,
+                    productViewModel.SelectedCategoryId,
                     productViewModel.Name);
 
                 if (updateSucceeded)
@@ -125,6 +156,13 @@ namespace ProductBrowsing.Mvc.Controllers
                 }
             }
 
+            // something went wrong, user must fill in data again
+            List<Category> allCategories = await _categoryService.GetAllAsync();
+            productViewModel.AllAvailableCategories = allCategories
+                .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                    c.Name,
+                    c.Id.ToString()))
+                .ToList();
             return View(productViewModel);
         }
 

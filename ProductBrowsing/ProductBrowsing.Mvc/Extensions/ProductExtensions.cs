@@ -17,8 +17,8 @@ namespace ProductBrowsing.Mvc.Extensions
             {
                 Id = product.Id,
                 Name = product.Name,
-                Category = product.Category?.ToViewModel() 
-                            ?? new CategoryViewModel()
+                CategoryId = product.Category?.Id ?? 0,
+                CategoryName = product.Category?.Name
             };
         }
     }

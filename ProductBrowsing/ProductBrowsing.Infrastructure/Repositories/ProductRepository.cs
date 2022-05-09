@@ -24,7 +24,7 @@ namespace ProductBrowsing.Infrastructure.Repositories
         public async Task<List<Product>> GetAllAsync()
         {
             List<ProductEntity> products = await _dbContext
-                .Products
+                .Products.Include(p => p.Category)
                 .ToListAsync();
 
             return products.Select(c => c.FromEntity()).ToList();
@@ -32,7 +32,8 @@ namespace ProductBrowsing.Infrastructure.Repositories
 
         public async Task<Product> GetByIdAsync(int id)
         {
-            ProductEntity product = await _dbContext.Products
+            ProductEntity product = await _dbContext
+                .Products.Include(p => p.Category)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             return product.FromEntity();
@@ -63,10 +64,10 @@ namespace ProductBrowsing.Infrastructure.Repositories
 
         public async Task<bool> UpdateAsync(int productId, int updatedCategoryId, string updatedProductName)
         {
-            ProductEntity product = await _dbContext.Products
+            ProductEntity productEntity = await _dbContext.Products
                 .FirstOrDefaultAsync(c => c.Id == productId);
 
-            if (product is null)
+            if (productEntity is null)
             {
                 return false;
             }
@@ -79,13 +80,10 @@ namespace ProductBrowsing.Infrastructure.Repositories
                 return false;
             }
 
-            ProductEntity entity = new ProductEntity
-            {
-                Name = updatedProductName,
-                Category = updatedCategory
-            };
+            productEntity.Name = updatedProductName;
+            productEntity.Category = updatedCategory;
 
-            _dbContext.Update(entity);
+            _dbContext.Update(productEntity);
 
             int affectedRows = await _dbContext.SaveChangesAsync();
 
