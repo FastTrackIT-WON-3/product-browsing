@@ -5,24 +5,34 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using ProductBrowsing.Core.Abstractions.Services;
+using ProductBrowsing.Core.Models;
 using ProductBrowsing.Infrastructure;
 using ProductBrowsing.Infrastructure.Entities;
+using ProductBrowsing.Mvc.Extensions;
+using ProductBrowsing.Mvc.Models;
 
 namespace ProductBrowsing.Mvc.Controllers
 {
     public class CategoryController : Controller
     {
-        private readonly DatabaseContext _context;
+        private readonly ICategoryService _categoryService;
 
-        public CategoryController(DatabaseContext context)
+        public CategoryController(ICategoryService categoryService)
         {
-            _context = context;
+            _categoryService = categoryService;
         }
 
         // GET: Category
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Categories.ToListAsync());
+            List<Category> allCategories = await _categoryService.GetAllAsync();
+
+            List<CategoryViewModel> allViewModels = allCategories
+                .Select(c => c.ToViewModel())
+                .ToList();
+
+            return View(allViewModels);
         }
 
         // GET: Category/Details/5
@@ -33,14 +43,15 @@ namespace ProductBrowsing.Mvc.Controllers
                 return NotFound();
             }
 
-            var categoryEntity = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (categoryEntity == null)
+            var category = await _categoryService.GetByIdAsync(id.Value);
+
+            if (category == null)
             {
                 return NotFound();
             }
 
-            return View(categoryEntity);
+            CategoryViewModel viewModel = category.ToViewModel();
+            return View(viewModel);
         }
 
         // GET: Category/Create
@@ -54,15 +65,18 @@ namespace ProductBrowsing.Mvc.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name")] CategoryEntity categoryEntity)
+        public async Task<IActionResult> Create([Bind("Id,Name")] CategoryViewModel categoryViewModel)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(categoryEntity);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                Category createdCategory = await _categoryService.CreateAsync(categoryViewModel.Name);
+                if (createdCategory is not null)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
             }
-            return View(categoryEntity);
+
+            return View(categoryViewModel);
         }
 
         // GET: Category/Edit/5
@@ -73,12 +87,14 @@ namespace ProductBrowsing.Mvc.Controllers
                 return NotFound();
             }
 
-            var categoryEntity = await _context.Categories.FindAsync(id);
-            if (categoryEntity == null)
+            Category category = await _categoryService.GetByIdAsync(id.Value);
+            if (category == null)
             {
                 return NotFound();
             }
-            return View(categoryEntity);
+
+            CategoryViewModel viewModel = category.ToViewModel();
+            return View(viewModel);
         }
 
         // POST: Category/Edit/5
@@ -86,34 +102,23 @@ namespace ProductBrowsing.Mvc.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] CategoryEntity categoryEntity)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] CategoryViewModel categoryViewModel)
         {
-            if (id != categoryEntity.Id)
+            if (id != categoryViewModel.Id)
             {
                 return NotFound();
             }
 
             if (ModelState.IsValid)
             {
-                try
+                bool updateSucceeded = await _categoryService.UpdateAsync(id, categoryViewModel.Name);
+                if (updateSucceeded)
                 {
-                    _context.Update(categoryEntity);
-                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CategoryEntityExists(categoryEntity.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
             }
-            return View(categoryEntity);
+
+            return View(categoryViewModel);
         }
 
         // GET: Category/Delete/5
@@ -124,14 +129,14 @@ namespace ProductBrowsing.Mvc.Controllers
                 return NotFound();
             }
 
-            var categoryEntity = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (categoryEntity == null)
+            Category category = await _categoryService.GetByIdAsync(id.Value);
+            if (category == null)
             {
                 return NotFound();
             }
 
-            return View(categoryEntity);
+            CategoryViewModel viewModel = category.ToViewModel();
+            return View(viewModel);
         }
 
         // POST: Category/Delete/5
@@ -139,15 +144,8 @@ namespace ProductBrowsing.Mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var categoryEntity = await _context.Categories.FindAsync(id);
-            _context.Categories.Remove(categoryEntity);
-            await _context.SaveChangesAsync();
+            bool deleteSucceeded = await _categoryService.DeleteAsync(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool CategoryEntityExists(int id)
-        {
-            return _context.Categories.Any(e => e.Id == id);
         }
     }
 }

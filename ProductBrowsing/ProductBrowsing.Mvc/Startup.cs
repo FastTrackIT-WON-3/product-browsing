@@ -32,6 +32,7 @@ namespace ProductBrowsing.Mvc
                     options.UseSqlServer(Configuration.GetConnectionString("DatabaseContext")));
 
             services.AddProductBrowsingServices();
+            services.AddProductBrowsingRepositories();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
