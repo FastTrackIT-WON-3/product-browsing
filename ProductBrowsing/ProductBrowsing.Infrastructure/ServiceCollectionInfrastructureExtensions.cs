@@ -10,6 +10,7 @@ namespace ProductBrowsing.Infrastructure
                 this IServiceCollection services)
         {
             services.AddTransient<ICategoryRepository, CategoryRepository>();
+            services.AddTransient<IProductRepository, ProductRepository>();
         }
     }
 }

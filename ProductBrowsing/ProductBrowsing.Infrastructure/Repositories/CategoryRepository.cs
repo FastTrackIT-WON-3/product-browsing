@@ -6,12 +6,11 @@ using ProductBrowsing.Infrastructure.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ProductBrowsing.Infrastructure.Repositories
 {
-    public class CategoryRepository : ICategoryRepository
+    internal class CategoryRepository : ICategoryRepository
     {
         private readonly DatabaseContext _dbContext;
 

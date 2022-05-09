@@ -10,6 +10,7 @@ namespace ProductBrowsing.Core
             this IServiceCollection services)
         {
             services.AddTransient<ICategoryService, CategoryService>();
+            services.AddTransient<IProductService, ProductService>();
         }
     }
 }
